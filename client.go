@@ -113,7 +113,10 @@ func (c *apiClient) getOrganizationsPage(ctx context.Context, token string, page
 
 	responseBody, err := c.getRequest(getOrganizationsURL, span, nil, headers)
 
-	var listResponse contracts.ListResponse
+	var listResponse struct {
+		Items      []*contracts.Organization `json:"items"`
+		Pagination contracts.Pagination      `json:"pagination"`
+	}
 
 	// unmarshal json body
 	err = json.Unmarshal(responseBody, &listResponse)
@@ -122,15 +125,7 @@ func (c *apiClient) getOrganizationsPage(ctx context.Context, token string, page
 		return
 	}
 
-	// map items to organizations O(n)
-	organizations = make([]*contracts.Organization, len(listResponse.Items))
-	for i := range listResponse.Items {
-		org, ok := listResponse.Items[i].(*contracts.Organization)
-		if !ok {
-			return organizations, listResponse.Pagination, fmt.Errorf("Returned item is not of type *contracts.Organization but of type %T", listResponse.Items[i])
-		}
-		organizations[i] = org
-	}
+	organizations = listResponse.Items
 
 	return organizations, listResponse.Pagination, nil
 }
@@ -174,7 +169,10 @@ func (c *apiClient) getGroupsPage(ctx context.Context, token string, pageNumber,
 
 	responseBody, err := c.getRequest(getOrganizationsURL, span, nil, headers)
 
-	var listResponse contracts.ListResponse
+	var listResponse struct {
+		Items      []*contracts.Group   `json:"items"`
+		Pagination contracts.Pagination `json:"pagination"`
+	}
 
 	// unmarshal json body
 	err = json.Unmarshal(responseBody, &listResponse)
@@ -183,15 +181,7 @@ func (c *apiClient) getGroupsPage(ctx context.Context, token string, pageNumber,
 		return
 	}
 
-	// map items to groups O(n)
-	groups = make([]*contracts.Group, len(listResponse.Items))
-	for i := range listResponse.Items {
-		grp, ok := listResponse.Items[i].(*contracts.Group)
-		if !ok {
-			return groups, listResponse.Pagination, fmt.Errorf("Returned item is not of type *contracts.Group but of type %T", listResponse.Items[i])
-		}
-		groups[i] = grp
-	}
+	groups = listResponse.Items
 
 	return groups, listResponse.Pagination, nil
 }
@@ -235,7 +225,10 @@ func (c *apiClient) getUsersPage(ctx context.Context, token string, pageNumber, 
 
 	responseBody, err := c.getRequest(getOrganizationsURL, span, nil, headers)
 
-	var listResponse contracts.ListResponse
+	var listResponse struct {
+		Items      []*contracts.User    `json:"items"`
+		Pagination contracts.Pagination `json:"pagination"`
+	}
 
 	// unmarshal json body
 	err = json.Unmarshal(responseBody, &listResponse)
@@ -244,16 +237,7 @@ func (c *apiClient) getUsersPage(ctx context.Context, token string, pageNumber, 
 		return
 	}
 
-	// map items to users O(n)
-	users = make([]*contracts.User, len(listResponse.Items))
-	for i := range listResponse.Items {
-		usr, ok := listResponse.Items[i].(*contracts.User)
-		if !ok {
-			return users, listResponse.Pagination, fmt.Errorf("Returned item is not of type *contracts.User but of type %T", listResponse.Items[i])
-		}
-
-		users[i] = usr
-	}
+	users = listResponse.Items
 
 	return users, listResponse.Pagination, nil
 }
