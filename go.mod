@@ -10,6 +10,6 @@ require (
 	github.com/opentracing/opentracing-go v1.1.0
 	github.com/rs/zerolog v1.19.0
 	github.com/sethgrid/pester v1.1.0
-	github.com/stretchr/testify v1.6.1 // indirect
+	github.com/stretchr/testify v1.6.1
 	github.com/uber/jaeger-client-go v2.23.1+incompatible
 )
