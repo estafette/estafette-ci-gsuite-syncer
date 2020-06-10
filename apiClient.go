@@ -161,13 +161,13 @@ func (c *apiClient) getGroupsPage(ctx context.Context, token string, pageNumber,
 
 	span.LogKV("page[number]", pageNumber, "page[size]", pageSize)
 
-	getOrganizationsURL := fmt.Sprintf("%v/api/groups?page[number]=%v&page[size]=%v", c.apiBaseURL, pageNumber, pageSize)
+	getGroupsURL := fmt.Sprintf("%v/api/groups?page[number]=%v&page[size]=%v", c.apiBaseURL, pageNumber, pageSize)
 	headers := map[string]string{
 		"Authorization": fmt.Sprintf("Bearer %v", token),
 		"Content-Type":  "application/json",
 	}
 
-	responseBody, err := c.getRequest(getOrganizationsURL, span, nil, headers)
+	responseBody, err := c.getRequest(getGroupsURL, span, nil, headers)
 
 	var listResponse struct {
 		Items      []*contracts.Group   `json:"items"`
@@ -217,13 +217,13 @@ func (c *apiClient) getUsersPage(ctx context.Context, token string, pageNumber, 
 
 	span.LogKV("page[number]", pageNumber, "page[size]", pageSize)
 
-	getOrganizationsURL := fmt.Sprintf("%v/api/organizations?page[number]=%v&page[size]=%v", c.apiBaseURL, pageNumber, pageSize)
+	getUsersURL := fmt.Sprintf("%v/api/users?page[number]=%v&page[size]=%v", c.apiBaseURL, pageNumber, pageSize)
 	headers := map[string]string{
 		"Authorization": fmt.Sprintf("Bearer %v", token),
 		"Content-Type":  "application/json",
 	}
 
-	responseBody, err := c.getRequest(getOrganizationsURL, span, nil, headers)
+	responseBody, err := c.getRequest(getUsersURL, span, nil, headers)
 
 	var listResponse struct {
 		Items      []*contracts.User    `json:"items"`
