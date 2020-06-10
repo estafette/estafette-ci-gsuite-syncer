@@ -85,8 +85,17 @@ func main() {
 	gsuiteGroups, err := gsuiteClient.GetGroups(ctx)
 	if err != nil {
 		log.Fatal().Err(err).Msgf("Failed fetching gsuite groups")
+	}
 
-		log.Info().Msgf("Fetched %v gsuite groups", len(gsuiteGroups))
+	log.Info().Msgf("Fetched %v gsuite groups", len(gsuiteGroups))
+
+	gsuiteGroupMembers, err := gsuiteClient.GetGroupMembers(ctx, gsuiteGroups)
+	if err != nil {
+		log.Fatal().Err(err).Msgf("Failed fetching gsuite group members")
+	}
+
+	for group, members := range gsuiteGroupMembers {
+		log.Info().Msgf("Fetched %v gsuite members for group %v", len(members), group.Email)
 	}
 }
 

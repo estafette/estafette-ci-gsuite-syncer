@@ -13,6 +13,7 @@ import (
 
 type GsuiteClient interface {
 	GetGroups(ctx context.Context) (groups []*admin.Group, err error)
+	GetGroupMembers(ctx context.Context, groups []*admin.Group) (groupMembers map[*admin.Group][]*admin.Member, err error)
 }
 
 // NewGsuiteClient returns a new GsuiteClient
@@ -77,6 +78,37 @@ func (c *gsuiteClient) GetGroups(ctx context.Context) (groups []*admin.Group, er
 			break
 		}
 		nextPageToken = resp.NextPageToken
+	}
+
+	return
+}
+
+func (c *gsuiteClient) GetGroupMembers(ctx context.Context, groups []*admin.Group) (groupMembers map[*admin.Group][]*admin.Member, err error) {
+	groupMembers = map[*admin.Group][]*admin.Member{}
+
+	for _, group := range groups {
+		groupMembers[group] = make([]*admin.Member, 0)
+		nextPageToken := ""
+		for {
+			// retrieving group members (by page)
+			listCall := c.adminService.Members.List(group.Email)
+			if nextPageToken != "" {
+				listCall.PageToken(nextPageToken)
+			}
+			resp, err := listCall.Do()
+			if err != nil {
+				return groupMembers, err
+			}
+
+			for _, member := range resp.Members {
+				groupMembers[group] = append(groupMembers[group], member)
+			}
+
+			if resp.NextPageToken == "" {
+				break
+			}
+			nextPageToken = resp.NextPageToken
+		}
 	}
 
 	return
