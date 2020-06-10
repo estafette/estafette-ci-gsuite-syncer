@@ -80,8 +80,8 @@ releases:
         container:
           repository: estafette
           env:
-            API_BASE_URL: estafette.secret(AJwsqWlJSLjiUOPz.FTuJpmMFZLqJZOO7D56F0VhyeDDPH6YvdBdnO0ZSRx1iHawXycCSMfruacdwI4Txxq9wjHyGkxTK8td8.GiaJvmVdZfaDeri_Go-Qw1goeDqPFrw1cl9rIUZSGBBqXOUQzsiQPa-zecZQqD5Lr6iDZhVWZ6a09v79L2Ro40rn_-Qn)
-            CLIENT_ID: estafette.secret(-x74-rmpg1anSO44.sY1UCtjoW2nLZUByweF_kTqbJeK2fX76KwHDNGDecHE3SA4-w6_AEtDBhAL7QSZySm6_zQ==.4tMVB567Rz2JMV5x0LgqwjmJfOX6LzyjLgOUdyWDaiVsVQgvRJqLeUYGAQNjV3JkKIztq1jMO_agwjgeT8XPOP-XGJDi)
+            API_BASE_URL: 'estafette.secret(AJwsqWlJSLjiUOPz.FTuJpmMFZLqJZOO7D56F0VhyeDDPH6YvdBdnO0ZSRx1iHawXycCSMfruacdwI4Txxq9wjHyGkxTK8td8.GiaJvmVdZfaDeri_Go-Qw1goeDqPFrw1cl9rIUZSGBBqXOUQzsiQPa-zecZQqD5Lr6iDZhVWZ6a09v79L2Ro40rn_-Qn)'
+            CLIENT_ID: 'estafette.secret(-x74-rmpg1anSO44.sY1UCtjoW2nLZUByweF_kTqbJeK2fX76KwHDNGDecHE3SA4-w6_AEtDBhAL7QSZySm6_zQ==.4tMVB567Rz2JMV5x0LgqwjmJfOX6LzyjLgOUdyWDaiVsVQgvRJqLeUYGAQNjV3JkKIztq1jMO_agwjgeT8XPOP-XGJDi)'
             CLIENT_SECRET: 'estafette.secret(wue_b6rwXX1Exvn8.tQBhS0B62netwrbGqrEN-dAH35d45q9RYliqBqHutYzfyf1XCgCvVJPoMMvJJV-zhniWgw1AYClDjn1nDgu9Ca_5wel4qkHGYhmsW-4HgEc=.7BMmEh42l0H02s-bgP8s6-0U7oo6toxScFKBC7r72q6GwvBuRjiUQ-ncZMvDLQ6-11mNkDaGOlsOIZWgniGs6N0irPo5)'
             JAEGER_SAMPLER_TYPE: probabilistic
             JAEGER_SAMPLER_PARAM: 0.1
