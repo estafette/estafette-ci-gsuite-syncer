@@ -76,7 +76,7 @@ func (c *apiClient) GetOrganizations(ctx context.Context, token string) (organiz
 	defer span.Finish()
 
 	pageNumber := 1
-	pageSize := 10
+	pageSize := 100
 	organizations = make([]*contracts.Organization, 0)
 
 	for {
@@ -132,7 +132,7 @@ func (c *apiClient) GetGroups(ctx context.Context, token string) (groups []*cont
 	defer span.Finish()
 
 	pageNumber := 1
-	pageSize := 10
+	pageSize := 100
 	groups = make([]*contracts.Group, 0)
 
 	for {
@@ -188,7 +188,7 @@ func (c *apiClient) GetUsers(ctx context.Context, token string) (users []*contra
 	defer span.Finish()
 
 	pageNumber := 1
-	pageSize := 10
+	pageSize := 100
 	users = make([]*contracts.User, 0)
 
 	for {
