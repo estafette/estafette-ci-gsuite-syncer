@@ -21,8 +21,8 @@ import (
 type ApiClient interface {
 	GetToken(ctx context.Context, clientID, clientSecret string) (token string, err error)
 	GetOrganizations(ctx context.Context, token string) (organizations []*contracts.Organization, err error)
-	GetGroups(ctx context.Context, token string) (organizations []*contracts.Group, err error)
-	GetUsers(ctx context.Context, token string) (organizations []*contracts.User, err error)
+	GetGroups(ctx context.Context, token string) (groups []*contracts.Group, err error)
+	GetUsers(ctx context.Context, token string) (users []*contracts.User, err error)
 }
 
 // NewApiClient returns a new ApiClient

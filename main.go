@@ -22,9 +22,15 @@ var (
 	buildDate string
 	goVersion = runtime.Version()
 
-	apiBaseURL   = kingpin.Flag("api-base-url", "The base url of the estafette-ci-api to communicate with").Envar("API_BASE_URL").String()
-	clientID     = kingpin.Flag("client-id", "The id of the client as configured in Estafette, to securely communicate with the api.").Envar("CLIENT_ID").String()
-	clientSecret = kingpin.Flag("client-secret", "The secret of the client as configured in Estafette, to securely communicate with the api.").Envar("CLIENT_SECRET").String()
+	// params for apiClient
+	apiBaseURL   = kingpin.Flag("api-base-url", "The base url of the estafette-ci-api to communicate with").Envar("API_BASE_URL").Required().String()
+	clientID     = kingpin.Flag("client-id", "The id of the client as configured in Estafette, to securely communicate with the api.").Envar("CLIENT_ID").Required().String()
+	clientSecret = kingpin.Flag("client-secret", "The secret of the client as configured in Estafette, to securely communicate with the api.").Envar("CLIENT_SECRET").Required().String()
+
+	// params for gsuiteClient
+	gsuiteDomain      = kingpin.Flag("gsuite-domain", "The domain used by gsuite.").Envar("GSUITE_DOMAIN").Required().String()
+	gsuiteAdminEmail  = kingpin.Flag("gsuite-admin-email", "Email address for gsuite admin user that allowed the service account to impersonate him/her.").Envar("GSUITE_ADMIN_EMAIL").Required().String()
+	gsuiteGroupPrefix = kingpin.Flag("gsuite-group-prefix", "The prefix to use for gsuite groups in order to leave alone all non-prefixed groups.").Envar("GSUITE_GROUP_PREFIX").Required().String()
 )
 
 func main() {
@@ -70,6 +76,18 @@ func main() {
 	}
 
 	log.Info().Msgf("Fetched %v users", len(users))
+
+	gsuiteClient, err := NewGsuiteClient(*gsuiteDomain, *gsuiteAdminEmail, *gsuiteGroupPrefix)
+	if err != nil {
+		log.Fatal().Err(err).Msgf("Failed creating gsuite client")
+	}
+
+	gsuiteGroups, err := gsuiteClient.GetGroups(ctx)
+	if err != nil {
+		log.Fatal().Err(err).Msgf("Failed fetching gsuite groups")
+
+		log.Info().Msgf("Fetched %v gsuite groups", len(gsuiteGroups))
+	}
 }
 
 // initJaeger returns an instance of Jaeger Tracer that can be configured with environment variables
