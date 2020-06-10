@@ -77,10 +77,17 @@ func main() {
 
 	log.Info().Msgf("Fetched %v users", len(users))
 
-	gsuiteClient, err := NewGsuiteClient(*gsuiteDomain, *gsuiteAdminEmail, *gsuiteGroupPrefix)
+	gsuiteClient, err := NewGsuiteClient(ctx, *gsuiteDomain, *gsuiteAdminEmail, *gsuiteGroupPrefix)
 	if err != nil {
 		log.Fatal().Err(err).Msgf("Failed creating gsuite client")
 	}
+
+	gsuiteOrganizations, err := gsuiteClient.GetOrganizations(ctx)
+	if err != nil {
+		log.Fatal().Err(err).Msgf("Failed fetching gsuite organizations")
+	}
+
+	log.Info().Msgf("Fetched %v gsuite organizations", len(gsuiteOrganizations))
 
 	gsuiteGroups, err := gsuiteClient.GetGroups(ctx)
 	if err != nil {

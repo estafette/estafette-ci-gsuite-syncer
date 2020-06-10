@@ -10,15 +10,18 @@ import (
 	"golang.org/x/oauth2"
 	"golang.org/x/oauth2/google"
 	admin "google.golang.org/api/admin/directory/v1"
+	crmv1 "google.golang.org/api/cloudresourcemanager/v1"
+	iam "google.golang.org/api/iam/v1"
 )
 
 type GsuiteClient interface {
+	GetOrganizations(ctx context.Context) (organizations []*crmv1.Organization, err error)
 	GetGroups(ctx context.Context) (groups []*admin.Group, err error)
 	GetGroupMembers(ctx context.Context, groups []*admin.Group) (groupMembers map[*admin.Group][]*admin.Member, err error)
 }
 
 // NewGsuiteClient returns a new GsuiteClient
-func NewGsuiteClient(gsuiteDomain, gsuiteAdminEmail, gsuiteGroupPrefix string) (GsuiteClient, error) {
+func NewGsuiteClient(ctx context.Context, gsuiteDomain, gsuiteAdminEmail, gsuiteGroupPrefix string) (GsuiteClient, error) {
 
 	// use service account with G Suite Domain-wide Delegation enabled to authenticate against gsuite apis
 	serviceAccountKeyFileBytes, err := ioutil.ReadFile(os.Getenv("GOOGLE_APPLICATION_CREDENTIALS"))
@@ -40,10 +43,22 @@ func NewGsuiteClient(gsuiteDomain, gsuiteAdminEmail, gsuiteGroupPrefix string) (
 		return nil, err
 	}
 
+	// use service account to authenticate against gcp apis
+	googleClient, err := google.DefaultClient(ctx, iam.CloudPlatformScope)
+	if err != nil {
+		return nil, err
+	}
+
+	crmv1Service, err := crmv1.New(googleClient)
+	if err != nil {
+		return nil, err
+	}
+
 	return &gsuiteClient{
 		gsuiteDomain:      gsuiteDomain,
 		gsuiteGroupPrefix: gsuiteGroupPrefix,
 		adminService:      adminService,
+		crmv1Service:      crmv1Service,
 	}, nil
 }
 
@@ -51,6 +66,23 @@ type gsuiteClient struct {
 	gsuiteDomain      string
 	gsuiteGroupPrefix string
 	adminService      *admin.Service
+	crmv1Service      *crmv1.Service
+}
+
+func (c *gsuiteClient) GetOrganizations(ctx context.Context) (organizations []*crmv1.Organization, err error) {
+	span, ctx := opentracing.StartSpanFromContext(ctx, "GsuiteClient::GetOrganizations")
+	defer span.Finish()
+
+	resp, err := c.crmv1Service.Organizations.Search(&crmv1.SearchOrganizationsRequest{}).Do()
+	if err != nil {
+		return organizations, err
+	}
+
+	organizations = resp.Organizations
+
+	span.LogKV("organizations", len(organizations))
+
+	return organizations, nil
 }
 
 func (c *gsuiteClient) GetGroups(ctx context.Context) (groups []*admin.Group, err error) {
