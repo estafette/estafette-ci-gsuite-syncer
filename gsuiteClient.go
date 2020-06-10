@@ -24,7 +24,7 @@ func NewGsuiteClient(gsuiteDomain, gsuiteAdminEmail, gsuiteGroupPrefix string) (
 		return nil, err
 	}
 
-	jwtConfig, err := google.JWTConfigFromJSON(serviceAccountKeyFileBytes, admin.AdminDirectoryGroupScope, admin.AdminDirectoryGroupMemberScope, admin.AdminDirectoryUserReadonlyScope)
+	jwtConfig, err := google.JWTConfigFromJSON(serviceAccountKeyFileBytes, admin.AdminDirectoryGroupReadonlyScope, admin.AdminDirectoryGroupMemberReadonlyScope, admin.AdminDirectoryUserReadonlyScope)
 	if err != nil {
 		return nil, err
 	}
