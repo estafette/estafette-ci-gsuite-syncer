@@ -6,6 +6,7 @@ import (
 	"os"
 	"strings"
 
+	"github.com/opentracing/opentracing-go"
 	"golang.org/x/oauth2"
 	"golang.org/x/oauth2/google"
 	admin "google.golang.org/api/admin/directory/v1"
@@ -53,6 +54,9 @@ type gsuiteClient struct {
 }
 
 func (c *gsuiteClient) GetGroups(ctx context.Context) (groups []*admin.Group, err error) {
+	span, ctx := opentracing.StartSpanFromContext(ctx, "GsuiteClient::GetGroups")
+	defer span.Finish()
+
 	groups = make([]*admin.Group, 0)
 	nextPageToken := ""
 
@@ -84,6 +88,9 @@ func (c *gsuiteClient) GetGroups(ctx context.Context) (groups []*admin.Group, er
 }
 
 func (c *gsuiteClient) GetGroupMembers(ctx context.Context, groups []*admin.Group) (groupMembers map[*admin.Group][]*admin.Member, err error) {
+	span, ctx := opentracing.StartSpanFromContext(ctx, "GsuiteClient::GetGroupMembers")
+	defer span.Finish()
+
 	groupMembers = map[*admin.Group][]*admin.Member{}
 
 	for _, group := range groups {

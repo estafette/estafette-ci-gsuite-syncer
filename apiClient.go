@@ -37,8 +37,7 @@ type apiClient struct {
 }
 
 func (c *apiClient) GetToken(ctx context.Context, clientID, clientSecret string) (token string, err error) {
-
-	span, ctx := opentracing.StartSpanFromContext(ctx, "GetToken")
+	span, ctx := opentracing.StartSpanFromContext(ctx, "ApiClient::GetToken")
 	defer span.Finish()
 
 	clientObject := contracts.Client{
@@ -73,8 +72,7 @@ func (c *apiClient) GetToken(ctx context.Context, clientID, clientSecret string)
 }
 
 func (c *apiClient) GetOrganizations(ctx context.Context, token string) (organizations []*contracts.Organization, err error) {
-
-	span, ctx := opentracing.StartSpanFromContext(ctx, "GetOrganizations")
+	span, ctx := opentracing.StartSpanFromContext(ctx, "ApiClient::GetOrganizations")
 	defer span.Finish()
 
 	pageNumber := 1
@@ -99,8 +97,7 @@ func (c *apiClient) GetOrganizations(ctx context.Context, token string) (organiz
 }
 
 func (c *apiClient) getOrganizationsPage(ctx context.Context, token string, pageNumber, pageSize int) (organizations []*contracts.Organization, pagination contracts.Pagination, err error) {
-
-	span, ctx := opentracing.StartSpanFromContext(ctx, "getOrganizationsPage")
+	span, ctx := opentracing.StartSpanFromContext(ctx, "ApiClient::getOrganizationsPage")
 	defer span.Finish()
 
 	span.LogKV("page[number]", pageNumber, "page[size]", pageSize)
@@ -131,7 +128,7 @@ func (c *apiClient) getOrganizationsPage(ctx context.Context, token string, page
 }
 
 func (c *apiClient) GetGroups(ctx context.Context, token string) (groups []*contracts.Group, err error) {
-	span, ctx := opentracing.StartSpanFromContext(ctx, "GetGroups")
+	span, ctx := opentracing.StartSpanFromContext(ctx, "ApiClient::GetGroups")
 	defer span.Finish()
 
 	pageNumber := 1
@@ -156,7 +153,7 @@ func (c *apiClient) GetGroups(ctx context.Context, token string) (groups []*cont
 }
 
 func (c *apiClient) getGroupsPage(ctx context.Context, token string, pageNumber, pageSize int) (groups []*contracts.Group, pagination contracts.Pagination, err error) {
-	span, ctx := opentracing.StartSpanFromContext(ctx, "getGroupsPage")
+	span, ctx := opentracing.StartSpanFromContext(ctx, "ApiClient::getGroupsPage")
 	defer span.Finish()
 
 	span.LogKV("page[number]", pageNumber, "page[size]", pageSize)
@@ -187,7 +184,7 @@ func (c *apiClient) getGroupsPage(ctx context.Context, token string, pageNumber,
 }
 
 func (c *apiClient) GetUsers(ctx context.Context, token string) (users []*contracts.User, err error) {
-	span, ctx := opentracing.StartSpanFromContext(ctx, "GetUsers")
+	span, ctx := opentracing.StartSpanFromContext(ctx, "ApiClient::GetUsers")
 	defer span.Finish()
 
 	pageNumber := 1
@@ -212,7 +209,7 @@ func (c *apiClient) GetUsers(ctx context.Context, token string) (users []*contra
 }
 
 func (c *apiClient) getUsersPage(ctx context.Context, token string, pageNumber, pageSize int) (users []*contracts.User, pagination contracts.Pagination, err error) {
-	span, ctx := opentracing.StartSpanFromContext(ctx, "getUsersPage")
+	span, ctx := opentracing.StartSpanFromContext(ctx, "ApiClient::getUsersPage")
 	defer span.Finish()
 
 	span.LogKV("page[number]", pageNumber, "page[size]", pageSize)
