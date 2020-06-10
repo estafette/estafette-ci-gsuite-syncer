@@ -246,19 +246,19 @@ func (c *apiClient) getUsersPage(ctx context.Context, token string, pageNumber, 
 }
 
 func (c *apiClient) getRequest(uri string, span opentracing.Span, requestBody io.Reader, headers map[string]string, allowedStatusCodes ...int) (responseBody []byte, err error) {
-	return c.makeRequest("GET", uri, span, requestBody, headers, allowedStatusCodes)
+	return c.makeRequest("GET", uri, span, requestBody, headers, allowedStatusCodes...)
 }
 
 func (c *apiClient) postRequest(uri string, span opentracing.Span, requestBody io.Reader, headers map[string]string, allowedStatusCodes ...int) (responseBody []byte, err error) {
-	return c.makeRequest("POST", uri, span, requestBody, headers, allowedStatusCodes)
+	return c.makeRequest("POST", uri, span, requestBody, headers, allowedStatusCodes...)
 }
 
 func (c *apiClient) putRequest(uri string, span opentracing.Span, requestBody io.Reader, headers map[string]string, allowedStatusCodes ...int) (responseBody []byte, err error) {
-	return c.makeRequest("PUT", uri, span, requestBody, headers, allowedStatusCodes)
+	return c.makeRequest("PUT", uri, span, requestBody, headers, allowedStatusCodes...)
 }
 
 func (c *apiClient) deleteRequest(uri string, span opentracing.Span, requestBody io.Reader, headers map[string]string, allowedStatusCodes ...int) (responseBody []byte, err error) {
-	return c.makeRequest("DELETE", uri, span, requestBody, headers, allowedStatusCodes)
+	return c.makeRequest("DELETE", uri, span, requestBody, headers, allowedStatusCodes...)
 }
 
 func (c *apiClient) makeRequest(method, uri string, span opentracing.Span, requestBody io.Reader, headers map[string]string, allowedStatusCodes ...int) (responseBody []byte, err error) {
