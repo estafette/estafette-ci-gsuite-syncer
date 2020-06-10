@@ -125,7 +125,11 @@ func (c *apiClient) getOrganizationsPage(ctx context.Context, token string, page
 	// map items to organizations O(n)
 	organizations = make([]*contracts.Organization, len(listResponse.Items))
 	for i := range listResponse.Items {
-		organizations[i] = listResponse.Items[i].(*contracts.Organization)
+		org, ok := listResponse.Items[i].(*contracts.Organization)
+		if !ok {
+			return organizations, listResponse.Pagination, fmt.Errorf("Returned item is not of type *contracts.Organization but of type %T", listResponse.Items[i])
+		}
+		organizations[i] = org
 	}
 
 	return organizations, listResponse.Pagination, nil
@@ -182,7 +186,11 @@ func (c *apiClient) getGroupsPage(ctx context.Context, token string, pageNumber,
 	// map items to groups O(n)
 	groups = make([]*contracts.Group, len(listResponse.Items))
 	for i := range listResponse.Items {
-		groups[i] = listResponse.Items[i].(*contracts.Group)
+		grp, ok := listResponse.Items[i].(*contracts.Group)
+		if !ok {
+			return groups, listResponse.Pagination, fmt.Errorf("Returned item is not of type *contracts.Group but of type %T", listResponse.Items[i])
+		}
+		groups[i] = grp
 	}
 
 	return groups, listResponse.Pagination, nil
@@ -239,7 +247,12 @@ func (c *apiClient) getUsersPage(ctx context.Context, token string, pageNumber, 
 	// map items to users O(n)
 	users = make([]*contracts.User, len(listResponse.Items))
 	for i := range listResponse.Items {
-		users[i] = listResponse.Items[i].(*contracts.User)
+		usr, ok := listResponse.Items[i].(*contracts.User)
+		if !ok {
+			return users, listResponse.Pagination, fmt.Errorf("Returned item is not of type *contracts.User but of type %T", listResponse.Items[i])
+		}
+
+		users[i] = usr
 	}
 
 	return users, listResponse.Pagination, nil
