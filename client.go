@@ -111,7 +111,7 @@ func (c *apiClient) getOrganizationsPage(ctx context.Context, token string, page
 		"Content-Type":  "application/json",
 	}
 
-	responseBody, err := c.postRequest(getOrganizationsURL, span, nil, headers)
+	responseBody, err := c.getRequest(getOrganizationsURL, span, nil, headers)
 
 	var listResponse contracts.ListResponse
 
@@ -168,7 +168,7 @@ func (c *apiClient) getGroupsPage(ctx context.Context, token string, pageNumber,
 		"Content-Type":  "application/json",
 	}
 
-	responseBody, err := c.postRequest(getOrganizationsURL, span, nil, headers)
+	responseBody, err := c.getRequest(getOrganizationsURL, span, nil, headers)
 
 	var listResponse contracts.ListResponse
 
@@ -225,7 +225,7 @@ func (c *apiClient) getUsersPage(ctx context.Context, token string, pageNumber, 
 		"Content-Type":  "application/json",
 	}
 
-	responseBody, err := c.postRequest(getOrganizationsURL, span, nil, headers)
+	responseBody, err := c.getRequest(getOrganizationsURL, span, nil, headers)
 
 	var listResponse contracts.ListResponse
 
