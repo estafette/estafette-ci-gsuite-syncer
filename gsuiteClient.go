@@ -84,6 +84,8 @@ func (c *gsuiteClient) GetGroups(ctx context.Context) (groups []*admin.Group, er
 		nextPageToken = resp.NextPageToken
 	}
 
+	span.LogKV("groups", len(groups))
+
 	return
 }
 
@@ -92,6 +94,8 @@ func (c *gsuiteClient) GetGroupMembers(ctx context.Context, groups []*admin.Grou
 	defer span.Finish()
 
 	groupMembers = map[*admin.Group][]*admin.Member{}
+
+	groupMemberCount := 0
 
 	for _, group := range groups {
 		groupMembers[group] = make([]*admin.Member, 0)
@@ -116,7 +120,11 @@ func (c *gsuiteClient) GetGroupMembers(ctx context.Context, groups []*admin.Grou
 			}
 			nextPageToken = resp.NextPageToken
 		}
+
+		groupMemberCount += len(groupMembers[group])
 	}
+
+	span.LogKV("groupmembers", groupMemberCount)
 
 	return
 }

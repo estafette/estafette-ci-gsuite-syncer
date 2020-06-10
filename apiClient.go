@@ -93,6 +93,8 @@ func (c *apiClient) GetOrganizations(ctx context.Context, token string) (organiz
 		pageNumber++
 	}
 
+	span.LogKV("organizations", len(organizations))
+
 	return organizations, nil
 }
 
@@ -149,6 +151,8 @@ func (c *apiClient) GetGroups(ctx context.Context, token string) (groups []*cont
 		pageNumber++
 	}
 
+	span.LogKV("groups", len(groups))
+
 	return groups, nil
 }
 
@@ -204,6 +208,8 @@ func (c *apiClient) GetUsers(ctx context.Context, token string) (users []*contra
 
 		pageNumber++
 	}
+
+	span.LogKV("users", len(users))
 
 	return users, nil
 }
