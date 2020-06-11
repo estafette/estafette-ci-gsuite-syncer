@@ -130,33 +130,46 @@ func (c *gsuiteClient) GetGroupMembers(ctx context.Context, groups []*admin.Grou
 	groupMemberCount := 0
 
 	for _, group := range groups {
-		groupMembers[group] = make([]*admin.Member, 0)
-		nextPageToken := ""
-		for {
-			// retrieving group members (by page)
-			listCall := c.adminService.Members.List(group.Email)
-			if nextPageToken != "" {
-				listCall.PageToken(nextPageToken)
-			}
-			resp, err := listCall.Do()
-			if err != nil {
-				return groupMembers, err
-			}
 
-			for _, member := range resp.Members {
-				groupMembers[group] = append(groupMembers[group], member)
-			}
-
-			if resp.NextPageToken == "" {
-				break
-			}
-			nextPageToken = resp.NextPageToken
+		members, err := c.getGroupMembersPage(ctx, group)
+		if err != nil {
+			return groupMembers, err
 		}
 
-		groupMemberCount += len(groupMembers[group])
+		groupMembers[group] = members
+		groupMemberCount += len(members)
 	}
 
 	span.LogKV("groupmembers", groupMemberCount)
 
 	return
+}
+
+func (c *gsuiteClient) getGroupMembersPage(ctx context.Context, group *admin.Group) (members []*admin.Member, err error) {
+	members = make([]*admin.Member, 0)
+
+	span, ctx := opentracing.StartSpanFromContext(ctx, "GsuiteClient::getGroupMembersPage")
+	defer span.Finish()
+
+	nextPageToken := ""
+	for {
+		// retrieving group members (by page)
+		listCall := c.adminService.Members.List(group.Email)
+		if nextPageToken != "" {
+			listCall.PageToken(nextPageToken)
+		}
+		resp, err := listCall.Do()
+		if err != nil {
+			return members, err
+		}
+
+		members = append(members, resp.Members...)
+
+		if resp.NextPageToken == "" {
+			break
+		}
+		nextPageToken = resp.NextPageToken
+	}
+
+	return members, nil
 }
