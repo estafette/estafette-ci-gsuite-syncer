@@ -147,7 +147,7 @@ func (c *gsuiteClient) GetGroupMembers(ctx context.Context, groups []*admin.Grou
 			// lower semaphore once the routine's finished, making room for another one to start
 			defer func() { <-semaphore }()
 
-			members, err := c.getGroupMembersPage(ctx, semaphore, group)
+			members, err := c.getGroupMembersPage(ctx, group)
 
 			resultChannel <- struct {
 				group   *admin.Group
@@ -177,7 +177,7 @@ func (c *gsuiteClient) GetGroupMembers(ctx context.Context, groups []*admin.Grou
 	return
 }
 
-func (c *gsuiteClient) getGroupMembersPage(ctx context.Context, semaphore chan bool, group *admin.Group) (members []*admin.Member, err error) {
+func (c *gsuiteClient) getGroupMembersPage(ctx context.Context, group *admin.Group) (members []*admin.Member, err error) {
 	members = make([]*admin.Member, 0)
 
 	span, ctx := opentracing.StartSpanFromContext(ctx, "GsuiteClient::getGroupMembersPage")
