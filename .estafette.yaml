@@ -90,6 +90,6 @@ releases:
             GSUITE_ADMIN_EMAIL: estafette.secret(C1OAyoKYG-PGW3Mv.ZzP4AtffPcv-RIfggtgR8sDA15Rl9zcy1lEyUwxw1b_llQ==.cznkA8PTdOjlW8nzmNRe98rZQxNnezg-08bo0E3VSUFhfODlqhJ_X5OsW8q6gpS07he5tsDj_0LLa3zWOigyayO8PR0L)
             GSUITE_GROUP_PREFIX: estafette.secret(6B-EWkYsDgF5Ag6J.aEXP5bTkBKRovOq7uMofXHVxoBKgOxY=.aE_LoKb1B-aN9jR1szAAZcyQW1pWPrpZdhwEz5bOGusu8Yz0CSdtNrIYS1dwzf-aO8uoNhHOWjWnK_1I_oSZshj6YAuk)
             JAEGER_SAMPLER_TYPE: probabilistic
-            JAEGER_SAMPLER_PARAM: 0.1
+            JAEGER_SAMPLER_PARAM: 0.5
             ESTAFETTE_LOG_FORMAT: v3
         useGoogleCloudCredentials: true
