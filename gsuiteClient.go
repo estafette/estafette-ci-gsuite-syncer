@@ -129,15 +129,44 @@ func (c *gsuiteClient) GetGroupMembers(ctx context.Context, groups []*admin.Grou
 
 	groupMemberCount := 0
 
-	for _, group := range groups {
+	// http://jmoiron.net/blog/limiting-concurrency-in-go/
+	concurrency := 10
+	semaphore := make(chan bool, concurrency)
 
-		members, err := c.getGroupMembersPage(ctx, group)
-		if err != nil {
+	resultChannel := make(chan struct {
+		group   *admin.Group
+		members []*admin.Member
+		err     error
+	}, len(groups))
+
+	for _, group := range groups {
+		// try to fill semaphore up to it's full size otherwise wait for a routine to finish
+		semaphore <- true
+
+		go func(ctx context.Context, semaphore chan bool, group *admin.Group) {
+			members, err := c.getGroupMembersPage(ctx, semaphore, group)
+
+			resultChannel <- struct {
+				group   *admin.Group
+				members []*admin.Member
+				err     error
+			}{group, members, err}
+		}(ctx, semaphore, group)
+	}
+
+	// try to fill semaphore up to it's full size which only succeeds if all routines have finished
+	for i := 0; i < cap(semaphore); i++ {
+		semaphore <- true
+	}
+
+	close(resultChannel)
+	for r := range resultChannel {
+		if r.err != nil {
 			return groupMembers, err
 		}
 
-		groupMembers[group] = members
-		groupMemberCount += len(members)
+		groupMembers[r.group] = r.members
+		groupMemberCount += len(r.members)
 	}
 
 	span.LogKV("groupmembers", groupMemberCount)
@@ -145,7 +174,9 @@ func (c *gsuiteClient) GetGroupMembers(ctx context.Context, groups []*admin.Grou
 	return
 }
 
-func (c *gsuiteClient) getGroupMembersPage(ctx context.Context, group *admin.Group) (members []*admin.Member, err error) {
+func (c *gsuiteClient) getGroupMembersPage(ctx context.Context, semaphore chan bool, group *admin.Group) (members []*admin.Member, err error) {
+	defer func() { <-semaphore }()
+
 	members = make([]*admin.Member, 0)
 
 	span, ctx := opentracing.StartSpanFromContext(ctx, "GsuiteClient::getGroupMembersPage")
