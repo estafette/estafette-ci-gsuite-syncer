@@ -126,6 +126,8 @@ func (c *apiClient) getOrganizationsPage(ctx context.Context, token string, page
 
 	organizations = listResponse.Items
 
+	span.LogKV("organizations", len(organizations))
+
 	return organizations, listResponse.Pagination, nil
 }
 
@@ -184,6 +186,8 @@ func (c *apiClient) getGroupsPage(ctx context.Context, token string, pageNumber,
 
 	groups = listResponse.Items
 
+	span.LogKV("groups", len(groups))
+
 	return groups, listResponse.Pagination, nil
 }
 
@@ -241,6 +245,8 @@ func (c *apiClient) getUsersPage(ctx context.Context, token string, pageNumber, 
 	}
 
 	users = listResponse.Items
+
+	span.LogKV("users", len(users))
 
 	return users, listResponse.Pagination, nil
 }

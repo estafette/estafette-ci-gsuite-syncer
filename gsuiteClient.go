@@ -154,6 +154,7 @@ func (c *gsuiteClient) GetGroupMembers(ctx context.Context, groups []*admin.Grou
 				members []*admin.Member
 				err     error
 			}{group, members, err}
+
 		}(ctx, semaphore, group)
 	}
 
@@ -183,6 +184,8 @@ func (c *gsuiteClient) getGroupMembersPage(ctx context.Context, group *admin.Gro
 	span, ctx := opentracing.StartSpanFromContext(ctx, "GsuiteClient::getGroupMembersPage")
 	defer span.Finish()
 
+	span.LogKV("group", group.Email)
+
 	nextPageToken := ""
 	for {
 		// retrieving group members (by page)
@@ -202,6 +205,8 @@ func (c *gsuiteClient) getGroupMembersPage(ctx context.Context, group *admin.Gro
 		}
 		nextPageToken = resp.NextPageToken
 	}
+
+	span.LogKV("members", len(members))
 
 	return members, nil
 }
