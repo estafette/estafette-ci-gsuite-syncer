@@ -335,7 +335,7 @@ func (c *apiClient) createGroup(ctx context.Context, token string, group *contra
 		"Content-Type":  "application/json",
 	}
 
-	_, err = c.postRequest(createGroupURL, span, strings.NewReader(string(bytes)), headers)
+	_, err = c.postRequest(createGroupURL, span, strings.NewReader(string(bytes)), headers, http.StatusCreated)
 
 	return
 }
