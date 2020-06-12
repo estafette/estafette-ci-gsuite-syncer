@@ -331,7 +331,8 @@ func (c *apiClient) createGroup(ctx context.Context, token string, group *contra
 
 	createGroupURL := fmt.Sprintf("%v/api/groups", c.apiBaseURL)
 	headers := map[string]string{
-		"Content-Type": "application/json",
+		"Authorization": fmt.Sprintf("Bearer %v", token),
+		"Content-Type":  "application/json",
 	}
 
 	_, err = c.postRequest(createGroupURL, span, strings.NewReader(string(bytes)), headers)
@@ -353,7 +354,8 @@ func (c *apiClient) updateGroup(ctx context.Context, token string, group *contra
 
 	updateGroupURL := fmt.Sprintf("%v/api/groups/%v", c.apiBaseURL, group.ID)
 	headers := map[string]string{
-		"Content-Type": "application/json",
+		"Authorization": fmt.Sprintf("Bearer %v", token),
+		"Content-Type":  "application/json",
 	}
 
 	_, err = c.putRequest(updateGroupURL, span, strings.NewReader(string(bytes)), headers)
