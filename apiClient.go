@@ -357,7 +357,7 @@ func (c *apiClient) SynchronizeGroupsAndMembers(ctx context.Context, token strin
 			// lower semaphore once the routine's finished, making room for another one to start
 			defer func() { <-semaphore }()
 
-			userGroups, err := c.getGroupsForUser(ctx, u, groups, gsuiteGroupMembers)
+			userGroups, err := c.getGroupsForUser(ctx, user, groups, gsuiteGroupMembers)
 			if err != nil {
 				resultChannel <- err
 				return
@@ -373,7 +373,6 @@ func (c *apiClient) SynchronizeGroupsAndMembers(ctx context.Context, token strin
 							g.Name = ug.Name
 							dirty = true
 						}
-
 					}
 				}
 				if !userHasGroup {
@@ -385,7 +384,21 @@ func (c *apiClient) SynchronizeGroupsAndMembers(ctx context.Context, token strin
 				}
 			}
 
-			// todo check if a group needs to be removed
+			for i, g := range user.Groups {
+				isInUserGroups := false
+				for _, ug := range userGroups {
+					if g.ID == ug.ID {
+						isInUserGroups = true
+					}
+				}
+				if !isInUserGroups {
+					// remove item without maintaining order
+					user.Groups[i] = user.Groups[len(user.Groups)-1]
+					user.Groups = user.Groups[:len(user.Groups)-1]
+
+					dirty = true
+				}
+			}
 
 			if dirty {
 				err = c.updateUser(ctx, token, user)
