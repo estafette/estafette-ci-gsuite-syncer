@@ -384,7 +384,9 @@ func (c *apiClient) SynchronizeGroupsAndMembers(ctx context.Context, token strin
 				}
 			}
 
-			for i, g := range user.Groups {
+			// use downward loop to avoid running out of bounds when an item is removed
+			for i := len(user.Groups) - 1; i >= 0; i-- {
+				g := user.Groups[i]
 				isInUserGroups := false
 				for _, ug := range userGroups {
 					if g.ID == ug.ID {
@@ -392,8 +394,9 @@ func (c *apiClient) SynchronizeGroupsAndMembers(ctx context.Context, token strin
 					}
 				}
 				if !isInUserGroups {
-					// remove item without maintaining order
-					user.Groups[i] = user.Groups[len(user.Groups)-1]
+					// memory-leak safe delete (https://github.com/golang/go/wiki/SliceTricks) without preserving order
+					copy(user.Groups[i:], user.Groups[i+1:])
+					user.Groups[len(user.Groups)-1] = nil // or the zero value of T
 					user.Groups = user.Groups[:len(user.Groups)-1]
 
 					dirty = true
