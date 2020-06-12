@@ -256,7 +256,7 @@ func (c *apiClient) getUsersPage(ctx context.Context, token string, pageNumber, 
 }
 
 func (c *apiClient) SynchronizeGroupsAndMembers(ctx context.Context, token string, groups []*contracts.Group, users []*contracts.User, gsuiteGroupMembers map[*admin.Group][]*admin.Member) (err error) {
-	span, ctx := opentracing.StartSpanFromContext(ctx, "ApiClient::UpdateGroupsAndMembers")
+	span, ctx := opentracing.StartSpanFromContext(ctx, "ApiClient::SynchronizeGroupsAndMembers")
 	defer span.Finish()
 
 	for _, g := range groups {
