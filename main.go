@@ -104,6 +104,13 @@ func main() {
 	for group, members := range gsuiteGroupMembers {
 		log.Info().Msgf("Fetched %v gsuite members for group %v", len(members), group.Email)
 	}
+
+	err = apiClient.SynchronizeGroupsAndMembers(ctx, token, groups, users, gsuiteGroupMembers)
+	if err != nil {
+		log.Fatal().Err(err).Msgf("Failed updating synchronizing gsuite groups to estafette")
+	}
+
+	log.Info().Msg("Done!")
 }
 
 // initJaeger returns an instance of Jaeger Tracer that can be configured with environment variables

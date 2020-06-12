@@ -16,13 +16,17 @@ import (
 	"github.com/opentracing/opentracing-go"
 	"github.com/rs/zerolog/log"
 	"github.com/sethgrid/pester"
+	admin "google.golang.org/api/admin/directory/v1"
 )
+
+const gsuitProviderName = "gsuite"
 
 type ApiClient interface {
 	GetToken(ctx context.Context, clientID, clientSecret string) (token string, err error)
 	GetOrganizations(ctx context.Context, token string) (organizations []*contracts.Organization, err error)
 	GetGroups(ctx context.Context, token string) (groups []*contracts.Group, err error)
 	GetUsers(ctx context.Context, token string) (users []*contracts.User, err error)
+	SynchronizeGroupsAndMembers(ctx context.Context, token string, groups []*contracts.Group, users []*contracts.User, gsuiteGroupMembers map[*admin.Group][]*admin.Member) (err error)
 }
 
 // NewApiClient returns a new ApiClient
@@ -249,6 +253,112 @@ func (c *apiClient) getUsersPage(ctx context.Context, token string, pageNumber, 
 	span.LogKV("users", len(users))
 
 	return users, listResponse.Pagination, nil
+}
+
+func (c *apiClient) SynchronizeGroupsAndMembers(ctx context.Context, token string, groups []*contracts.Group, users []*contracts.User, gsuiteGroupMembers map[*admin.Group][]*admin.Member) (err error) {
+	span, ctx := opentracing.StartSpanFromContext(ctx, "ApiClient::UpdateGroupsAndMembers")
+	defer span.Finish()
+
+	for _, g := range groups {
+		hasMatchingGsuiteGroup := false
+		for gg := range gsuiteGroupMembers {
+			// check estafette group identities for provider gsuite and id equal to gsuite group email address
+			for _, i := range g.Identities {
+				if i.Provider == gsuitProviderName && i.ID == gg.Email {
+					hasMatchingGsuiteGroup = true
+
+					// we have a matching group in estafette, update it
+					g.Name = gg.Name
+					err = c.updateGroup(ctx, token, g)
+					if err != nil {
+						return
+					}
+				}
+			}
+		}
+
+		if !hasMatchingGsuiteGroup {
+			// todo de-activate it??
+		}
+	}
+
+	for gg, m := range gsuiteGroupMembers {
+		hasMatchingEstafetteGroup := false
+		for _, g := range groups {
+			// check estafette group identities for provider gsuite and id equal to gsuite group email address
+			for _, i := range g.Identities {
+				if i.Provider == gsuitProviderName && i.ID == gg.Email {
+					hasMatchingEstafetteGroup = true
+				}
+			}
+		}
+
+		if !hasMatchingEstafetteGroup && len(m) > 0 {
+			// no matching group, create one
+
+			newGroup := &contracts.Group{
+				Name: gg.Name,
+				Identities: []*contracts.GroupIdentity{
+					{
+						Provider: gsuitProviderName,
+						ID:       gg.Email,
+						Name:     gg.Name,
+					},
+				},
+			}
+
+			err = c.createGroup(ctx, token, newGroup)
+			if err != nil {
+				return
+			}
+		}
+	}
+
+	return nil
+}
+
+func (c *apiClient) createGroup(ctx context.Context, token string, group *contracts.Group) (err error) {
+
+	span, ctx := opentracing.StartSpanFromContext(ctx, "ApiClient::createGroup")
+	defer span.Finish()
+
+	span.LogKV("group.Name", group.Name)
+
+	bytes, err := json.Marshal(group)
+	if err != nil {
+		return
+	}
+
+	createGroupURL := fmt.Sprintf("%v/api/groups", c.apiBaseURL)
+	headers := map[string]string{
+		"Content-Type": "application/json",
+	}
+
+	_, err = c.postRequest(createGroupURL, span, strings.NewReader(string(bytes)), headers)
+
+	return
+}
+
+func (c *apiClient) updateGroup(ctx context.Context, token string, group *contracts.Group) (err error) {
+
+	span, ctx := opentracing.StartSpanFromContext(ctx, "ApiClient::updateGroup")
+	defer span.Finish()
+
+	span.LogKV("group.ID", group.ID, "group.Name", group.Name)
+
+	bytes, err := json.Marshal(group)
+	if err != nil {
+		return
+	}
+
+	updateGroupURL := fmt.Sprintf("%v/api/groups/%v", c.apiBaseURL, group.ID)
+	headers := map[string]string{
+		"Content-Type": "application/json",
+	}
+
+	_, err = c.putRequest(updateGroupURL, span, strings.NewReader(string(bytes)), headers)
+
+	return
 }
 
 func (c *apiClient) getRequest(uri string, span opentracing.Span, requestBody io.Reader, headers map[string]string, allowedStatusCodes ...int) (responseBody []byte, err error) {
