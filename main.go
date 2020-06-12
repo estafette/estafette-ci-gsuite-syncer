@@ -52,65 +52,54 @@ func main() {
 	apiClient := NewApiClient(*apiBaseURL)
 
 	token, err := apiClient.GetToken(ctx, *clientID, *clientSecret)
-	if err != nil {
-		log.Fatal().Err(err).Msgf("Failed retrieving JWT token")
-	}
+	handleError(closer, err, "Failed retrieving JWT token")
 
 	organizations, err := apiClient.GetOrganizations(ctx, token)
-	if err != nil {
-		log.Fatal().Err(err).Msgf("Failed fetching organizations")
-	}
+	handleError(closer, err, "Failed fetching organizations")
 
 	log.Info().Msgf("Fetched %v organizations", len(organizations))
 
 	groups, err := apiClient.GetGroups(ctx, token)
-	if err != nil {
-		log.Fatal().Err(err).Msgf("Failed fetching groups")
-	}
+	handleError(closer, err, "Failed fetching groups")
 
 	log.Info().Msgf("Fetched %v groups", len(groups))
 
 	users, err := apiClient.GetUsers(ctx, token)
-	if err != nil {
-		log.Fatal().Err(err).Msgf("Failed fetching users")
-	}
+	handleError(closer, err, "Failed fetching users")
 
 	log.Info().Msgf("Fetched %v users", len(users))
 
 	gsuiteClient, err := NewGsuiteClient(ctx, *gsuiteDomain, *gsuiteAdminEmail, *gsuiteGroupPrefix)
-	if err != nil {
-		log.Fatal().Err(err).Msgf("Failed creating gsuite client")
-	}
+	handleError(closer, err, "Failed creating gsuite client")
 
 	gsuiteOrganizations, err := gsuiteClient.GetOrganizations(ctx)
-	if err != nil {
-		log.Fatal().Err(err).Msgf("Failed fetching gsuite organizations")
-	}
+	handleError(closer, err, "Failed fetching gsuite organizations")
 
 	log.Info().Msgf("Fetched %v gsuite organizations", len(gsuiteOrganizations))
 
 	gsuiteGroups, err := gsuiteClient.GetGroups(ctx)
-	if err != nil {
-		log.Fatal().Err(err).Msgf("Failed fetching gsuite groups")
-	}
+	handleError(closer, err, "Failed fetching gsuite groups")
 
 	log.Info().Msgf("Fetched %v gsuite groups", len(gsuiteGroups))
 
 	gsuiteGroupMembers, err := gsuiteClient.GetGroupMembers(ctx, gsuiteGroups)
-	if err != nil {
-		log.Fatal().Err(err).Msgf("Failed fetching gsuite group members")
-	}
+	handleError(closer, err, "Failed fetching gsuite group members")
 
 	for group, members := range gsuiteGroupMembers {
 		log.Info().Msgf("Fetched %v gsuite members for group %v", len(members), group.Email)
 	}
 
 	err = apiClient.SynchronizeGroupsAndMembers(ctx, token, groups, users, gsuiteGroupMembers)
-	if err != nil {
-		log.Fatal().Err(err).Msgf("Failed updating synchronizing gsuite groups to estafette")
-	}
+	handleError(closer, err, "Failed updating synchronizing gsuite groups to estafette")
 
 	log.Info().Msg("Done!")
+}
+
+func handleError(jaegerCloser io.Closer, err error, message string) {
+	if err != nil {
+		jaegerCloser.Close()
+		log.Fatal().Err(err).Msg(message)
+	}
 }
 
 // initJaeger returns an instance of Jaeger Tracer that can be configured with environment variables
