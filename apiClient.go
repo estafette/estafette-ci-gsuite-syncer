@@ -30,14 +30,16 @@ type ApiClient interface {
 }
 
 // NewApiClient returns a new ApiClient
-func NewApiClient(apiBaseURL string) ApiClient {
+func NewApiClient(apiBaseURL, gsuiteGroupPrefix string) ApiClient {
 	return &apiClient{
-		apiBaseURL: apiBaseURL,
+		apiBaseURL:        apiBaseURL,
+		gsuiteGroupPrefix: gsuiteGroupPrefix,
 	}
 }
 
 type apiClient struct {
-	apiBaseURL string
+	apiBaseURL        string
+	gsuiteGroupPrefix string
 }
 
 func (c *apiClient) GetToken(ctx context.Context, clientID, clientSecret string) (token string, err error) {
@@ -268,7 +270,7 @@ func (c *apiClient) SynchronizeGroupsAndMembers(ctx context.Context, token strin
 					hasMatchingGsuiteGroup = true
 
 					// we have a matching group in estafette, update it
-					g.Name = gg.Name
+					g.Name = strings.TrimPrefix(gg.Name, c.gsuiteGroupPrefix)
 					err = c.updateGroup(ctx, token, g)
 					if err != nil {
 						return
@@ -297,7 +299,7 @@ func (c *apiClient) SynchronizeGroupsAndMembers(ctx context.Context, token strin
 			// no matching group, create one
 
 			newGroup := &contracts.Group{
-				Name: gg.Name,
+				Name: strings.TrimPrefix(gg.Name, c.gsuiteGroupPrefix),
 				Identities: []*contracts.GroupIdentity{
 					{
 						Provider: gsuitProviderName,

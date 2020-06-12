@@ -49,7 +49,7 @@ func main() {
 	span, ctx := opentracing.StartSpanFromContext(ctx, "Main")
 	defer span.Finish()
 
-	apiClient := NewApiClient(*apiBaseURL)
+	apiClient := NewApiClient(*apiBaseURL, *gsuiteGroupPrefix)
 
 	token, err := apiClient.GetToken(ctx, *clientID, *clientSecret)
 	handleError(closer, err, "Failed retrieving JWT token")
