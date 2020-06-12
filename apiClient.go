@@ -19,7 +19,8 @@ import (
 	admin "google.golang.org/api/admin/directory/v1"
 )
 
-const gsuitProviderName = "gsuite"
+const gsuiteProviderName = "gsuite"
+const googleProviderName = "google"
 
 type ApiClient interface {
 	GetToken(ctx context.Context, clientID, clientSecret string) (token string, err error)
@@ -265,8 +266,9 @@ func (c *apiClient) SynchronizeGroupsAndMembers(ctx context.Context, token strin
 	concurrency := 10
 	semaphore := make(chan bool, concurrency)
 
-	resultChannel := make(chan error, len(groups)+len(gsuiteGroupMembers))
+	resultChannel := make(chan error, len(groups)+len(gsuiteGroupMembers)+len(users))
 
+	// loop estafette groups to see if any of them have to be updated from gsuite groups
 	for _, g := range groups {
 		// try to fill semaphore up to it's full size otherwise wait for a routine to finish
 		semaphore <- true
@@ -279,13 +281,16 @@ func (c *apiClient) SynchronizeGroupsAndMembers(ctx context.Context, token strin
 			for gg := range gsuiteGroupMembers {
 				// check estafette group identities for provider gsuite and id equal to gsuite group email address
 				for _, i := range g.Identities {
-					if i.Provider == gsuitProviderName && i.ID == gg.Email {
+					if i.Provider == gsuiteProviderName && i.ID == gg.Email {
 						hasMatchingGsuiteGroup = true
 
 						// we have a matching group in estafette, update it
 						g.Name = strings.TrimPrefix(gg.Name, c.gsuiteGroupPrefix)
 						err = c.updateGroup(ctx, token, g)
-						resultChannel <- err
+						if err != nil {
+							resultChannel <- err
+							return
+						}
 					}
 				}
 			}
@@ -298,6 +303,7 @@ func (c *apiClient) SynchronizeGroupsAndMembers(ctx context.Context, token strin
 		}(ctx, token, g, gsuiteGroupMembers)
 	}
 
+	// loop gsuite groups to see if any of them have to be created as estafette groups
 	for gg, m := range gsuiteGroupMembers {
 		// try to fill semaphore up to it's full size otherwise wait for a routine to finish
 		semaphore <- true
@@ -310,7 +316,7 @@ func (c *apiClient) SynchronizeGroupsAndMembers(ctx context.Context, token strin
 			for _, g := range groups {
 				// check estafette group identities for provider gsuite and id equal to gsuite group email address
 				for _, i := range g.Identities {
-					if i.Provider == gsuitProviderName && i.ID == gg.Email {
+					if i.Provider == gsuiteProviderName && i.ID == gg.Email {
 						hasMatchingEstafetteGroup = true
 					}
 				}
@@ -323,7 +329,7 @@ func (c *apiClient) SynchronizeGroupsAndMembers(ctx context.Context, token strin
 					Name: strings.TrimPrefix(gg.Name, c.gsuiteGroupPrefix),
 					Identities: []*contracts.GroupIdentity{
 						{
-							Provider: gsuitProviderName,
+							Provider: gsuiteProviderName,
 							ID:       gg.Email,
 							Name:     gg.Name,
 						},
@@ -331,12 +337,66 @@ func (c *apiClient) SynchronizeGroupsAndMembers(ctx context.Context, token strin
 				}
 
 				err = c.createGroup(ctx, token, newGroup)
-				resultChannel <- err
+				if err != nil {
+					resultChannel <- err
+					return
+				}
 			}
 
 			resultChannel <- nil
 
 		}(ctx, token, gg, m, groups)
+	}
+
+	// loop estafette users and check if their groups need to be updates
+	for _, u := range users {
+		// try to fill semaphore up to it's full size otherwise wait for a routine to finish
+		semaphore <- true
+
+		go func(ctx context.Context, token string, user *contracts.User, groups []*contracts.Group, gsuiteGroupMembers map[*admin.Group][]*admin.Member) {
+			// lower semaphore once the routine's finished, making room for another one to start
+			defer func() { <-semaphore }()
+
+			userGroups, err := c.getGroupsForUser(ctx, u, groups, gsuiteGroupMembers)
+			if err != nil {
+				resultChannel <- err
+				return
+			}
+
+			dirty := false
+			for _, ug := range userGroups {
+				userHasGroup := false
+				for _, g := range user.Groups {
+					if g.ID == ug.ID {
+						userHasGroup = true
+						if g.Name != ug.Name {
+							g.Name = ug.Name
+							dirty = true
+						}
+
+					}
+				}
+				if !userHasGroup {
+					user.Groups = append(user.Groups, &contracts.Group{
+						ID:   ug.ID,
+						Name: ug.Name,
+					})
+					dirty = true
+				}
+			}
+
+			// todo check if a group needs to be removed
+
+			if dirty {
+				err = c.updateUser(ctx, token, user)
+				if err != nil {
+					resultChannel <- err
+					return
+				}
+			}
+
+			resultChannel <- nil
+		}(ctx, token, u, groups, gsuiteGroupMembers)
 	}
 
 	// try to fill semaphore up to it's full size which only succeeds if all routines have finished
@@ -352,6 +412,31 @@ func (c *apiClient) SynchronizeGroupsAndMembers(ctx context.Context, token strin
 	}
 
 	return nil
+}
+
+func (c *apiClient) getGroupsForUser(ctx context.Context, user *contracts.User, groups []*contracts.Group, gsuiteGroupMembers map[*admin.Group][]*admin.Member) (groupsForUser []*contracts.Group, err error) {
+
+	groupsForUser = make([]*contracts.Group, 0)
+
+	for _, g := range groups {
+		for gg, members := range gsuiteGroupMembers {
+			// check estafette group identities for provider gsuite and id equal to gsuite group email address
+			for _, i := range g.Identities {
+				if i.Provider == gsuiteProviderName && i.ID == gg.Email {
+					// check members to see if any of them match one of the users providers
+					for _, m := range members {
+						for _, ui := range user.Identities {
+							if ui.Provider == googleProviderName && ui.ID == m.Id {
+								groupsForUser = append(groupsForUser, g)
+							}
+						}
+					}
+				}
+			}
+		}
+	}
+
+	return
 }
 
 func (c *apiClient) createGroup(ctx context.Context, token string, group *contracts.Group) (err error) {
@@ -396,6 +481,29 @@ func (c *apiClient) updateGroup(ctx context.Context, token string, group *contra
 	}
 
 	_, err = c.putRequest(updateGroupURL, span, strings.NewReader(string(bytes)), headers)
+
+	return
+}
+
+func (c *apiClient) updateUser(ctx context.Context, token string, user *contracts.User) (err error) {
+
+	span, ctx := opentracing.StartSpanFromContext(ctx, "ApiClient::updateUser")
+	defer span.Finish()
+
+	span.LogKV("user.ID", user.ID, "user.Name", user.Name)
+
+	bytes, err := json.Marshal(user)
+	if err != nil {
+		return
+	}
+
+	updateUserURL := fmt.Sprintf("%v/api/users/%v", c.apiBaseURL, user.ID)
+	headers := map[string]string{
+		"Authorization": fmt.Sprintf("Bearer %v", token),
+		"Content-Type":  "application/json",
+	}
+
+	_, err = c.putRequest(updateUserURL, span, strings.NewReader(string(bytes)), headers)
 
 	return
 }
