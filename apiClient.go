@@ -285,11 +285,16 @@ func (c *apiClient) SynchronizeGroupsAndMembers(ctx context.Context, token strin
 						hasMatchingGsuiteGroup = true
 
 						// we have a matching group in estafette, update it
-						g.Name = strings.TrimPrefix(gg.Name, c.gsuiteGroupPrefix)
-						err = c.updateGroup(ctx, token, g)
-						if err != nil {
-							resultChannel <- err
-							return
+						desiredName := strings.TrimPrefix(gg.Name, c.gsuiteGroupPrefix)
+						if g.Name != desiredName || i.Name != gg.Name {
+							g.Name = desiredName
+							i.Name = gg.Name
+
+							err = c.updateGroup(ctx, token, g)
+							if err != nil {
+								resultChannel <- err
+								return
+							}
 						}
 					}
 				}
