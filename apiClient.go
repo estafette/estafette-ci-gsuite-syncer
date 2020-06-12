@@ -261,58 +261,93 @@ func (c *apiClient) SynchronizeGroupsAndMembers(ctx context.Context, token strin
 	span, ctx := opentracing.StartSpanFromContext(ctx, "ApiClient::SynchronizeGroupsAndMembers")
 	defer span.Finish()
 
-	for _, g := range groups {
-		hasMatchingGsuiteGroup := false
-		for gg := range gsuiteGroupMembers {
-			// check estafette group identities for provider gsuite and id equal to gsuite group email address
-			for _, i := range g.Identities {
-				if i.Provider == gsuitProviderName && i.ID == gg.Email {
-					hasMatchingGsuiteGroup = true
+	// http://jmoiron.net/blog/limiting-concurrency-in-go/
+	concurrency := 10
+	semaphore := make(chan bool, concurrency)
 
-					// we have a matching group in estafette, update it
-					g.Name = strings.TrimPrefix(gg.Name, c.gsuiteGroupPrefix)
-					err = c.updateGroup(ctx, token, g)
-					if err != nil {
-						return
+	resultChannel := make(chan error, len(groups)+len(gsuiteGroupMembers))
+
+	for _, g := range groups {
+		// try to fill semaphore up to it's full size otherwise wait for a routine to finish
+		semaphore <- true
+
+		go func(ctx context.Context, token string, g *contracts.Group, gsuiteGroupMembers map[*admin.Group][]*admin.Member) {
+			// lower semaphore once the routine's finished, making room for another one to start
+			defer func() { <-semaphore }()
+
+			hasMatchingGsuiteGroup := false
+			for gg := range gsuiteGroupMembers {
+				// check estafette group identities for provider gsuite and id equal to gsuite group email address
+				for _, i := range g.Identities {
+					if i.Provider == gsuitProviderName && i.ID == gg.Email {
+						hasMatchingGsuiteGroup = true
+
+						// we have a matching group in estafette, update it
+						g.Name = strings.TrimPrefix(gg.Name, c.gsuiteGroupPrefix)
+						err = c.updateGroup(ctx, token, g)
+						resultChannel <- err
 					}
 				}
 			}
-		}
 
-		if !hasMatchingGsuiteGroup {
-			// todo de-activate it??
-		}
+			if !hasMatchingGsuiteGroup {
+				// todo de-activate it??
+			}
+
+			resultChannel <- nil
+		}(ctx, token, g, gsuiteGroupMembers)
 	}
 
 	for gg, m := range gsuiteGroupMembers {
-		hasMatchingEstafetteGroup := false
-		for _, g := range groups {
-			// check estafette group identities for provider gsuite and id equal to gsuite group email address
-			for _, i := range g.Identities {
-				if i.Provider == gsuitProviderName && i.ID == gg.Email {
-					hasMatchingEstafetteGroup = true
+		// try to fill semaphore up to it's full size otherwise wait for a routine to finish
+		semaphore <- true
+
+		go func(ctx context.Context, token string, gg *admin.Group, m []*admin.Member, groups []*contracts.Group) {
+			// lower semaphore once the routine's finished, making room for another one to start
+			defer func() { <-semaphore }()
+
+			hasMatchingEstafetteGroup := false
+			for _, g := range groups {
+				// check estafette group identities for provider gsuite and id equal to gsuite group email address
+				for _, i := range g.Identities {
+					if i.Provider == gsuitProviderName && i.ID == gg.Email {
+						hasMatchingEstafetteGroup = true
+					}
 				}
 			}
-		}
 
-		if !hasMatchingEstafetteGroup && len(m) > 0 {
-			// no matching group, create one
+			if !hasMatchingEstafetteGroup && len(m) > 0 {
+				// no matching group, create one
 
-			newGroup := &contracts.Group{
-				Name: strings.TrimPrefix(gg.Name, c.gsuiteGroupPrefix),
-				Identities: []*contracts.GroupIdentity{
-					{
-						Provider: gsuitProviderName,
-						ID:       gg.Email,
-						Name:     gg.Name,
+				newGroup := &contracts.Group{
+					Name: strings.TrimPrefix(gg.Name, c.gsuiteGroupPrefix),
+					Identities: []*contracts.GroupIdentity{
+						{
+							Provider: gsuitProviderName,
+							ID:       gg.Email,
+							Name:     gg.Name,
+						},
 					},
-				},
+				}
+
+				err = c.createGroup(ctx, token, newGroup)
+				resultChannel <- err
 			}
 
-			err = c.createGroup(ctx, token, newGroup)
-			if err != nil {
-				return
-			}
+			resultChannel <- nil
+
+		}(ctx, token, gg, m, groups)
+	}
+
+	// try to fill semaphore up to it's full size which only succeeds if all routines have finished
+	for i := 0; i < cap(semaphore); i++ {
+		semaphore <- true
+	}
+
+	close(resultChannel)
+	for err := range resultChannel {
+		if err != nil {
+			return err
 		}
 	}
 

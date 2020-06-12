@@ -19,7 +19,7 @@ func TestGetToken(t *testing.T) {
 		getBaseURL := os.Getenv("API_BASE_URL")
 		clientID := os.Getenv("CLIENT_ID")
 		clientSecret := os.Getenv("CLIENT_SECRET")
-		client := NewApiClient(getBaseURL)
+		client := NewApiClient(getBaseURL, "")
 
 		// act
 		token, err := client.GetToken(ctx, clientID, clientSecret)
@@ -40,7 +40,7 @@ func TestGetOrganizations(t *testing.T) {
 		getBaseURL := os.Getenv("API_BASE_URL")
 		clientID := os.Getenv("CLIENT_ID")
 		clientSecret := os.Getenv("CLIENT_SECRET")
-		client := NewApiClient(getBaseURL)
+		client := NewApiClient(getBaseURL, "")
 		token, err := client.GetToken(ctx, clientID, clientSecret)
 		assert.Nil(t, err)
 
@@ -63,7 +63,7 @@ func TestGetGroups(t *testing.T) {
 		getBaseURL := os.Getenv("API_BASE_URL")
 		clientID := os.Getenv("CLIENT_ID")
 		clientSecret := os.Getenv("CLIENT_SECRET")
-		client := NewApiClient(getBaseURL)
+		client := NewApiClient(getBaseURL, "")
 		token, err := client.GetToken(ctx, clientID, clientSecret)
 		assert.Nil(t, err)
 
@@ -86,7 +86,7 @@ func TestGetUsers(t *testing.T) {
 		getBaseURL := os.Getenv("API_BASE_URL")
 		clientID := os.Getenv("CLIENT_ID")
 		clientSecret := os.Getenv("CLIENT_SECRET")
-		client := NewApiClient(getBaseURL)
+		client := NewApiClient(getBaseURL, "")
 		token, err := client.GetToken(ctx, clientID, clientSecret)
 		assert.Nil(t, err)
 
